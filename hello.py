@@ -1,9 +1,8 @@
 # coding: utf-8
-import re
 import urllib.request
 from html.parser import HTMLParser
 from bs4 import BeautifulSoup
-
+import json
 Count = 0
 
 
@@ -101,103 +100,117 @@ req = urllib.request.Request(url=url3, headers=headers)
 page = urllib.request.urlopen(req)
 
 HtmlCode = page.read().decode('UTF-8')
-print(HtmlCode)
 soup = BeautifulSoup(HtmlCode, "html.parser")
-description = re.findall('<meta name="description" content=".*"/>', HtmlCode)
-print(description)
-r = description[0].split(' ')
-print(r[2])
-for item in description:
-    print(parser.feed(item))
-    print(parser.pText)
 
+TitleDetail = soup.find('div', {'class': 'b_askti'})
+Title = TitleDetail.find('h1').get_text()
+print(Title)
 
+AskerDetail = soup.find('div', {'class': 'b_askab1'})
+Asker = AskerDetail.findAll('span')
+Sex_Age = Asker[0].get_text()
+Ask_time = Asker[1].get_text()
+print(Sex_Age)
+print(Ask_time)
 
-age = re.findall('<span>[女男] |.*岁</span>', HtmlCode)
-print(age)
-for item in age:
-    # parser.feed(item)
-    print(item.find('女'))
-    print(item[26:32])
 
 Des = soup.find(attrs={'name': 'description'})['content']
 print(Des)
 
-# p = re.findall('<p>(?=&nbsp;).*</p>', HtmlCode)
-# for item in p:
-#     print(item)
-# g = re.findall("追问\s*</span>\s*<p>.*</p>", HtmlCode)
-# for item in g:
-#     print(item)
-#
-# solve = re.findall(" <p><span>想得到怎样的帮助：</span>.*</p>", HtmlCode)
-# print(solve)
-# print("solve: ")
-# for item in solve:
-#     print(parser.feed(item))
-#     print(parser.pText)
-
 tag = soup.find('div', class_='b_askcont')
-# print("aaaa")
 des = tag.findAll('p')
-# print(des[1].contents[0].get_text())
-# print(des[1].contents[1])
+Helper = ''
 if len(des) > 0:
     Helper = des[1].contents[0].get_text() + des[1].contents[1]
     print(Helper)
-word = '<!-- 回复开始 -->'
-# .feed(HtmlCode)
-
-
-list = [i.start() for i in re.finditer('\\\\', 'C:\\Users\\aaa\\computer\\flicker\\01213.jpg')]
-list1 = [i.start() for i in re.finditer(u'<!-- 回复开始 -->', HtmlCode)]
-print(list1)
 
 Doctor = soup.findAll('span', {'class': 'b_sp1'})
+Doctor_Detail_List = []
+Doctor_Url_List = []
 for item in Doctor:
-    print(item.get_text())
+    Result = ''
+    # Str = item.find('a').get_text()
+    Str = item.get_text()
+    # print(Str)
+    for i in range(len(Str)):
+        if Str[i] not in ['\n', ' ', ' ']:
+            Result += Str[i]
+        if Str[i] == '\n':
+            Result += ' '
+        if Str[i] == ' ':
+            Result += ' '
+        if Str[i] == '师':
+            break
+    print("Result: " + Result)
+    Doctor_Detail_List.append(Result)
     print(item.find('a').get('href'))
-    # print(item.find('a').get_text())
-    # print(item)
+    Doctor_Url_List.append(item.find('a').get('href'))
 
-DoctorDetail = soup.findAll('span', {'class': 'b_sp2'})
-for item in DoctorDetail:
-    if DoctorDetail.index(item) % 2 == 0:
-        # print(item.find('a').get('href'))
-        # print(item.find('a').get_text())
-        # print(item.get_text())
+Doctor_Skilled = soup.findAll('span', {'class': 'b_sp2'})
+Doctor_Skilled_List = []
+for item in Doctor_Skilled:
+    if Doctor_Skilled.index(item) % 2 == 0:
         print(item.get_text())
+        Doctor_Skilled_List.append(item.get_text())
 
-# description = soup.find(attrs={"name": "description"})['content']
-# keywords = soup.find(attrs={"name": "keywords"})['content']
-# print(description)
-# print(keywords)
-# print("SSSSS")
+relay = soup.findAll('div', {'class': 'b_anscont_cont'})
+Doctor_Relay_List = []
+# print(len(relay))
+for item in relay:
+    Result = ''
+    # print(item.find('p').get_text())
+    for s in item.find('p').get_text():
+        if s != ' ':
+            Result += s
+    print(Result)
+    Doctor_Relay_List.append(Result)
 
+time = soup.findAll('span', {'class': 'b_anscont_time'})
+Doctor_Relay_Time_List = []
+for item in time:
+    Result = ''
+    # print(item.get_text())
+    Str = item.get_text()
+    for i in range(len(Str)):
+        if Str[i] in ['0', '1', '2', '3', '4', '5', '6','7', '8', '9', '-', ':'] or (Str[i] == ' ' and i < len(Str) and
+                                                                                     Str[i + 1] in ['0', '1', '2', '3',
+                                                                                                    '4', '5', '6','7',
+                                                                                                    '8', '9', '-', ':']):
+            Result += Str[i]
+    print(Result)
+    Doctor_Relay_Time_List.append(Result)
 
+Ask_Relay = []
+for i in range(len(Doctor_Relay_Time_List)):
+    data = {
+        "Doctor_Relay_Time": Doctor_Relay_Time_List[i],
+        "Doctor_Detail": Doctor_Detail_List[i],
+        "Doctor_Url": Doctor_Url_List[i],
+        "Doctor_Skilled": Doctor_Skilled_List[i],
+        "Doctor_Relay": Doctor_Relay_List[i]
+    }
+    Ask_Relay.append(data)
 
-# print(des[0].contents[1].get_text())
-# print(des[0].contents[2])
+for i in range(len(Ask_Relay)):
+    print(Ask_Relay[i])
 
-# blankDes = des[0].contents[2]
-# Des = ''
-#
-# for i in range(len(blankDes)):
-#     if blankDes[i] != ' ' and i != '\n':
-#         Des += blankDes[i]
-#     if (i == len(blankDes) - 1):
-#         Des = des[0].contents[1].get_text() + Des
-#
-# print(Des)
+File = open("F:\\AskDoctor_Information\\1.json", "w")
 
-soup1 = BeautifulSoup(HtmlCode[16211:20017], 'html.parser')
-relay = soup1.find('div', class_='crazy_new')
-relayp = relay.findAll('p')
-for item in relayp:
-    print(item.get_text())
-# print(relay)
-# re_ask_ans = soup1.find('div', class_='b_ansaddbox')
-# re_ask_ans_det = re_ask_ans.find_all('div', attrs = {class: 'b_ansaddli'})
+data = {
+    "Title": Title,
+    "Sex_Age": Sex_Age,
+    "Ask_Time": Ask_time,
+    "Description": Des,
+    "Helper:": Helper,
+    "Ask_Reply": Ask_Relay
+}
+dataJson = json.dump(data, File, ensure_ascii=False, indent=4)
+File.close()
+
+F = open("F:\\AskDoctor_Information\\1.json")
+D = json.load(F)
+print(D['Ask_Reply'][0]['Doctor_Relay_Time'])
+
 
 url4 = "http://www.120ask.com/list/waike/"
 AskUrl = ["http://www.120ask.com/list/waike/",
