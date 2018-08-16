@@ -3,6 +3,10 @@ import urllib.request
 from bs4 import BeautifulSoup
 import json
 import os
+import time
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf8') #改变标准输出的默认编码
 
 
 def get_all_information():
@@ -29,7 +33,7 @@ def get_all_information():
                     "https://www.120ask.com/list/tijianke",
                     "https://www.120ask.com/list/qtks"]
 
-    ask_url1 = ["http://www.120ask.com/list/waike/"]
+    ask_url1 = ["http://www.120ask.com/list/erke/"]
     headers_list = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
     Count = 0
     for url in ask_url1:
@@ -40,14 +44,14 @@ def get_all_information():
         question_page = soup.find('ul', class_='clears h-ul3')
         question_page_url_div = question_page.findAll('div', class_='fl h-left-p')
 
-        while Count < 200:
+        while Count < 199:
             urlArr = []
             for item in question_page_url_div:
                 page_url = item.find('a', {'class': 'q-quename'}).get('href')
                 print(page_url)
                 get_detail(page_url)
 
-            if Count != 200:
+            if Count < 199:
                 Count += 1
                 next_page = soup.find('div', class_='clears h-page')
                 print(next_page)
@@ -187,7 +191,7 @@ def get_detail(url):
                 result += ' '
             if doctor_str[i] == ' ':
                 result += ' '
-            if doctor_str[i] == '师':
+            if doctor_str[i] == '师'or doctor_str[i] == '员' or doctor_str[i] == '他':
                 break
         # print("Result: " + result)
         doctor_detail_list.append(result)
@@ -200,10 +204,14 @@ def get_detail(url):
 
     doctor_skilled = soup.findAll('span', {'class': 'b_sp2'})
     doctor_skilled_list = []
+
     for item in doctor_skilled:
-        if doctor_skilled.index(item) % 2 == 0:
+        if doctor_skilled.index(item) % 2 == 0 and '擅长' in item.get_text():
+            # print("item: ")
             # print(item.get_text())
             doctor_skilled_list.append(item.get_text())
+
+    # print(len(doctor_skilled_list))
 
     # relay = soup.findAll('div', {'class': 'b_anscont_cont'})
     # doctor_relay_list = []
@@ -234,6 +242,10 @@ def get_detail(url):
     # print(doctor_detail_list)
     # print(doctor_url_list)
     # print(doctor_skilled_list)
+    if len(doctor_skilled_list) < len(doctor_url_list):
+        for i in range(len(doctor_url_list) - len(doctor_skilled_list)):
+            doctor_skilled_list.append("无")
+
     for i in range(len(doctor_detail_list)):
         data = {
             "doctor_detail": doctor_detail_list[i],
@@ -287,5 +299,8 @@ url22 = "http://www.120ask.com/question/73913765.htm"
 u = "http://www.120ask.com/question/73913720.htm"
 a = "http://www.120ask.com/question/73916324.htm"
 b = "http://www.120ask.com/question/64750169.htm"
-# get_detail(b)
+c = "http://www.120ask.com/question/73582824.htm"
+# get_detail(c)
+start = time.time()
 get_all_information()
+print ("Total time :%s" %(time.time()-start))
