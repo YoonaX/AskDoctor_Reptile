@@ -1,6 +1,5 @@
 import threading
 import json
-# import time
 import urllib.request
 import os
 from bs4 import BeautifulSoup
@@ -8,111 +7,75 @@ from queue import Queue
 import time
 import sys
 import io
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf8') #改变标准输出的默认编码
 
-def get_detail(html_code, prefix):
-    # headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
-    # req = urllib.request.Request(url=url, headers=headers)
-    # page = urllib.request.urlopen(req, timeout=10)
-    file_prefix = prefix
-    # for i in url:
-    #     if i == ':':
-    #         file_prefix += '_'
-    #     elif i == '/':
-    #         file_prefix += '$'
-    #     else:
-    #         file_prefix += i
-    # print(file_prefix)
-    #
-    # html_code = page.read().decode('UTF-8')
-    soup = BeautifulSoup(html_code, "html.parser")
 
-    family = soup.find('div', {'class': 'b_route'})
-    family_url = family.findAll('a')
-    family_title = []
-    for i in range(1, len(family_url)):
-        # print(family_url[i].get_text())
-        family_title.append(family_url[i].get_text())
-
-    title_detail = soup.find('div', {'class': 'b_askti'})
-    title = title_detail.find('h1').get_text()
-    # print(title)
-
-    ask_detail = soup.find('div', {'class': 'b_askab1'})
-    ask = ask_detail.findAll('span')
-    sex_age = ask[0].get_text()
-    ask_time = ask[1].get_text()
-    # print(sex_age)
-    # print(ask_time)
-
-    accpte_doctor_all_information = soup.findAll("div", {"class": "b_acceptcont clears"})
-    # print(len(accpte_doctor_all_information))
-    reply_list = []
-    for doc_item in accpte_doctor_all_information:
-        r_list = []
-        reply_all = doc_item.findAll('div', {'class': 'crazy_new'})
-        time_all = soup.findAll('span', {'class': 'b_anscont_time'})
-
-        for i in range(len(reply_all)):
-            # print("Reply:")
-            reply_result = reply_all[i].find('p').get_text()
-            reply = ''
-            for r_str in reply_result:
-                if r_str != ' ':
-                    reply += r_str
-            # print(reply)
-            # print("Time:")
-            time_result = time_all[i].get_text()
-            time_standard = ''
-            for j in range(len(time_result)):
-                if time_result[j] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', ':'] or (time_result[j] == ' ' and j
-                                                                                                   < len(time_result) and
-                                                                                                   time_result[j + 1] in [
-                                                                                                       '0', '1', '2', '3',
-                                                                                                       '4', '5', '6', '7',
-                                                                                                       '8', '9', '-', ':']):
-                    time_standard += time_result[j]
-            # print(time_standard)
-            # print(reply + " | " + time_standard)
-            r_list.append(reply + " | " + time_standard)
-        reply_list.append(r_list)
-        # print(reply_list)
-
-    doctor_all_information = soup.findAll("div", {"class": "b_answercont clears"})
-    # print(len(doctor_all_information))
+def get_doctor_reply(reply_list, soup, div_class):
+    doctor_all_information = soup.findAll("div", {"class": div_class})
     for doc_item in doctor_all_information:
         r_list = []
         reply_all = doc_item.findAll('div', {'class': 'crazy_new'})
         time_all = soup.findAll('span', {'class': 'b_anscont_time'})
 
         for i in range(len(reply_all)):
-            # print("Reply:")
             reply_result = reply_all[i].find('p').get_text()
             reply = ''
+            # get reply
             for r_str in reply_result:
                 if r_str != ' ':
                     reply += r_str
-            # print(reply)
-            # print("Time:")
             time_result = time_all[i].get_text()
             time_standard = ''
             for j in range(len(time_result)):
-                if time_result[j] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', ':'] or (time_result[j] == ' ' and j
-                                                                                                   < len(time_result) and
-                                                                                                   time_result[j + 1] in [
-                                                                                                       '0', '1', '2', '3',
-                                                                                                       '4', '5', '6', '7',
-                                                                                                       '8', '9', '-', ':']):
+                # get standard time
+                if time_result[j] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', ':'] or (
+                        time_result[j] == ' ' and j
+                        < len(time_result) and
+                        time_result[j + 1] in [
+                            '0', '1', '2', '3',
+                            '4', '5', '6', '7',
+                            '8', '9', '-', ':']):
                     time_standard += time_result[j]
-            # print(time_standard)
-            # print(reply + " | " + time_standard)
             r_list.append(reply + " | " + time_standard)
         reply_list.append(r_list)
-        # print(reply_list)
 
-    # print(len(reply_list))
+
+def get_all_detail(html_code, prefix):
+    file_prefix = prefix
+    soup = BeautifulSoup(html_code, "html.parser")
+
+    family = soup.find('div', {'class': 'b_route'})
+    family_url = family.findAll('a')
+    family_title = []
+
+    # get family of a question
+    for i in range(1, len(family_url)):
+        family_title.append(family_url[i].get_text())
+
+    # get title of a question
+    title_detail = soup.find('div', {'class': 'b_askti'})
+    title = title_detail.find('h1').get_text()
+
+    ask_detail = soup.find('div', {'class': 'b_askab1'})
+    ask = ask_detail.findAll('span')
+
+    # get sex and age of people asking
+    sex_age = ask[0].get_text()
+
+    # get time and age of people asking
+    ask_time = ask[1].get_text()
+
+    reply_list = []
+
+    # get accepted reply of a question
+    get_doctor_reply(reply_list, soup, "b_acceptcont clears")
+
+    # get other reply of a question
+    get_doctor_reply(reply_list, soup, "b_answercont clears")
+
+    # get description of a question
     des = soup.find(attrs={'name': 'description'})['content']
-    # print(des)
+
+    # get helps wanted by patients
     helps = soup.find(attrs={'name': 'keywords'})['content']
 
     doctor_detail = soup.findAll('span', {'class': 'b_sp1'})
@@ -130,29 +93,30 @@ def get_detail(html_code, prefix):
                 result += ' '
             if doctor_str[i] == '师'or doctor_str[i] == '员' or doctor_str[i] == '他':
                 break
-        # print("Result: " + result)
+        # get doctor's detail
         doctor_detail_list.append(result)
-        # print(item)
         try:
-            # print(item.find('a').get('href'))
+            # if existing, get doctor's url
             doctor_url_list.append(item.find('a').get('href'))
         except AttributeError:
+            # if not existing, get None
             doctor_url_list.append("None")
 
     doctor_skilled = soup.findAll('span', {'class': 'b_sp2'})
     doctor_skilled_list = []
 
     for item in doctor_skilled:
+        # get doctor's speciality
         if doctor_skilled.index(item) % 2 == 0 and '擅长' in item.get_text():
-            # print("item: ")
-            # print(item.get_text())
             doctor_skilled_list.append(item.get_text())
 
     ask_relay = []
     if len(doctor_skilled_list) < len(doctor_url_list):
+        # if we can't find some doctors' speciality in this page, these doctor's specialities are none
         for i in range(len(doctor_url_list) - len(doctor_skilled_list)):
             doctor_skilled_list.append("无")
 
+    # write doctor's information to data
     for i in range(len(doctor_detail_list)):
         data = {
             "doctor_detail": doctor_detail_list[i],
@@ -162,25 +126,20 @@ def get_detail(html_code, prefix):
         }
         ask_relay.append(data)
 
+    # write all information to corresponding catalogue according to the family of a question
     if len(family_title) == 1:
         path = "F:\\Ask_Information\\" + family_title[0] + "\\其它"
         is_exists = os.path.exists(path)
         if not is_exists:
             os.makedirs(path)
         file = open(path + "\\" + file_prefix + ".json", "w")
-        # print(path + "\\" + file_prefix + ".json", encoding="utf-8")
-
     elif len(family_title) == 2:
-        # print("family:")
-        # print(family_title)
         path = "F:\\Ask_Information\\" + family_title[0] + "\\" + family_title[1] + "\\其它"
 
         is_exists = os.path.exists(path)
         if not is_exists:
             os.makedirs(path)
         file = open(path + "\\" + file_prefix + ".json", "w", encoding="utf-8")
-        # print(path + file_prefix + ".json")
-
     else:
         path = "F:\\Ask_Information\\" + family_title[0] + "\\" + family_title[1] + "\\" + family_title[2]
         is_exists = os.path.exists(path)
@@ -188,7 +147,7 @@ def get_detail(html_code, prefix):
             os.makedirs(path)
         file = open(path + "\\" + file_prefix + ".json", "w", encoding="utf-8")
 
-    data = {
+    question_data = {
         "title": title,
         "sex_age": sex_age,
         "ask_time": ask_time,
@@ -196,7 +155,9 @@ def get_detail(html_code, prefix):
         "helper:": helps,
         "ask_reply": ask_relay
     }
-    json.dump(data, file, ensure_ascii=False, indent=4)
+
+    # write data to json
+    json.dump(question_data, file, ensure_ascii=False, indent=4)
     file.close()
 
 
@@ -209,7 +170,6 @@ class ThreadCrawl(threading.Thread):
         self.file_prefix_queue = file_prefix_queue
         self.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
 
-
     def run(self):
         print("启动" + self.thread_name)
         while not self.page_queue.empty():  # 如果pageQueue为空，采集线程退出循环 Queue.empty() 判断队列是否为空
@@ -221,14 +181,10 @@ class ThreadCrawl(threading.Thread):
                 page = self.page_queue.get(False)
                 url = "https://www.120ask.com/question/" + str(page) + ".htm"
                 print(url)
-                # print("AAAAAAAAAAAAAAAAAAABBB")
                 req = urllib.request.Request(url=url, headers=self.headers)
-                # print("BBBBBBBBBBBBBBBBBBBBBB")
                 open_page = urllib.request.urlopen(req, timeout=10)
                 html_code = open_page.read().decode('UTF-8')
                 html_code = html_code.replace(u'\xa0', u' ')
-                # print("AAAAAAAAAAAAAAAAAAAAAA")
-                # print(html_code)
                 prefix = ''
                 for i in url:
                     if i == ':':
@@ -262,15 +218,15 @@ class ThreadParse(threading.Thread):
                 prefix = self.file_prefix_queue.get()
                 with self.lock:
                     print("解析：" + prefix)
-                    get_detail(html, prefix)
+                    get_all_detail(html, prefix)
 
             except Exception as e:
                 print(e)
 
 
 def main():
-    page_queue = Queue(4000)  # 页码的队列，表示10个页面，不写表示不限制个数
-    for i in range(60006001, 60010000):  # 放入1~10的数字，先进先出
+    page_queue = Queue(30)  # 页码的队列，表示10个页面，不写表示不限制个数
+    for i in range(72930001, 72930030):  # 放入1~10的数字，先进先出
         page_queue.put(i)
 
     data_queue = Queue()  # 采集结果(每页的HTML源码)的数据队列，参数为空表示不限制个数
@@ -293,13 +249,32 @@ def main():
         "采集线程71号", "采集线程72号", "采集线程73号", "采集线程74号", "采集线程75号",
         "采集线程76号", "采集线程77号", "采集线程78号", "采集线程79号", "采集线程70号",
         "采集线程81号", "采集线程82号", "采集线程83号", "采集线程84号", "采集线程85号",
-        "采集线程86号", "采集线程87号", "采集线程88号", "采集线程89号", "采集线程80号",
+        "采集线程86号", "采集线程87号", "采集线程88号", "采集线程89号", "采集线程90号",
         "采集线程91号", "采集线程92号", "采集线程93号", "采集线程94号", "采集线程95号",
-        "采集线程96号", "采集线程97号", "采集线程98号", "采集线程99号", "采集线程100号"
+        "采集线程96号", "采集线程97号", "采集线程98号", "采集线程99号", "采集线程100号",
+        "采集线程101号", "采集线程102号", "采集线程103号", "采集线程104号", "采集线程105号",
+        "采集线程106号", "采集线程107号", "采集线程108号", "采集线程109号", "采集线程110号",
+        "采集线程111号", "采集线程112号", "采集线程113号", "采集线程114号", "采集线程115号",
+        "采集线程116号", "采集线程117号", "采集线程118号", "采集线程119号", "采集线程120号",
+        "采集线程121号", "采集线程122号", "采集线程123号", "采集线程124号", "采集线程125号",
+        "采集线程126号", "采集线程127号", "采集线程128号", "采集线程129号", "采集线程130号",
+        "采集线程131号", "采集线程132号", "采集线程133号", "采集线程134号", "采集线程135号",
+        "采集线程136号", "采集线程137号", "采集线程138号", "采集线程139号", "采集线程140号",
+        "采集线程141号", "采集线程142号", "采集线程143号", "采集线程144号", "采集线程145号",
+        "采集线程146号", "采集线程147号", "采集线程148号", "采集线程149号", "采集线程150号",
+        "采集线程151号", "采集线程152号", "采集线程153号", "采集线程154号", "采集线程155号",
+        "采集线程156号", "采集线程157号", "采集线程158号", "采集线程159号", "采集线程160号",
+        "采集线程161号", "采集线程162号", "采集线程163号", "采集线程164号", "采集线程165号",
+        "采集线程166号", "采集线程167号", "采集线程168号", "采集线程169号", "采集线程160号",
+        "采集线程171号", "采集线程172号", "采集线程173号", "采集线程174号", "采集线程175号",
+        "采集线程176号", "采集线程177号", "采集线程178号", "采集线程179号", "采集线程170号",
+        "采集线程181号", "采集线程182号", "采集线程183号", "采集线程184号", "采集线程185号",
+        "采集线程186号", "采集线程187号", "采集线程188号", "采集线程189号", "采集线程190号",
+        "采集线程191号", "采集线程192号", "采集线程193号", "采集线程194号", "采集线程195号",
+        "采集线程196号", "采集线程197号", "采集线程198号", "采集线程199号", "采集线程200号"
     ]  # 存储三个采集线程的列表集合，留着后面join（等待所有子进程完成在退出程序）
 
     thread_crawl = []
-    # print("aaaaaaa")
     for thread_name in crawl_list:
         thread = ThreadCrawl(thread_name, page_queue, data_queue, file_prefix_queue)
         thread.start()
@@ -332,7 +307,27 @@ def main():
         "解析线程81号", "解析线程82号", "解析线程83号", "解析线程84号", "解析线程85号",
         "解析线程86号", "解析线程87号", "解析线程88号", "解析线程89号", "解析线程90号",
         "解析线程91号", "解析线程92号", "解析线程93号", "解析线程94号", "解析线程95号",
-        "解析线程96号", "解析线程97号", "解析线程98号", "解析线程99号", "解析线程100号"
+        "解析线程96号", "解析线程97号", "解析线程98号", "解析线程99号", "解析线程100号",
+        "解析线程101号", "解析线程102号", "解析线程103号", "解析线程104号", "解析线程105号",
+        "解析线程106号", "解析线程107号", "解析线程108号", "解析线程109号", "解析线程110号",
+        "解析线程111号", "解析线程112号", "解析线程113号", "解析线程114号", "解析线程115号",
+        "解析线程116号", "解析线程117号", "解析线程118号", "解析线程119号", "解析线程120号",
+        "解析线程121号", "解析线程122号", "解析线程123号", "解析线程124号", "解析线程125号",
+        "解析线程126号", "解析线程127号", "解析线程128号", "解析线程129号", "解析线程130号",
+        "解析线程131号", "解析线程132号", "解析线程133号", "解析线程134号", "解析线程135号",
+        "解析线程136号", "解析线程137号", "解析线程138号", "解析线程139号", "解析线程140号",
+        "解析线程141号", "解析线程142号", "解析线程143号", "解析线程144号", "解析线程145号",
+        "解析线程146号", "解析线程147号", "解析线程148号", "解析线程149号", "解析线程150号",
+        "解析线程151号", "解析线程152号", "解析线程153号", "解析线程154号", "解析线程155号",
+        "解析线程156号", "解析线程157号", "解析线程158号", "解析线程159号", "解析线程160号",
+        "解析线程161号", "解析线程162号", "解析线程163号", "解析线程164号", "解析线程165号",
+        "解析线程166号", "解析线程167号", "解析线程168号", "解析线程169号", "解析线程170号",
+        "解析线程171号", "解析线程172号", "解析线程173号", "解析线程174号", "解析线程175号",
+        "解析线程176号", "解析线程177号", "解析线程178号", "解析线程179号", "解析线程180号",
+        "解析线程181号", "解析线程182号", "解析线程183号", "解析线程184号", "解析线程185号",
+        "解析线程186号", "解析线程187号", "解析线程188号", "解析线程189号", "解析线程190号",
+        "解析线程191号", "解析线程192号", "解析线程193号", "解析线程194号", "解析线程195号",
+        "解析线程196号", "解析线程197号", "解析线程198号", "解析线程199号", "解析线程200号"
     ]  # 三个解析线程的名字
     thread_parse = []  # 存储三个解析线程，留着后面join（等待所有子进程完成在退出程序）
     for threadName in parse_list:
@@ -347,6 +342,7 @@ def main():
 
 
 if __name__ == "__main__":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf8')  # 改变标准输出的默认编码
     start = time.time()
     main()
     end = time.time()
